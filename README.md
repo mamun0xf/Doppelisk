@@ -40,9 +40,17 @@ Profiles are stored in `/data/adb/doppelisk/` and survive reinstalls.
 ## Build
 
 ```sh
-gradle assembleDebug      # debug APK
+make -C app/src/main/cpp  # rebuild the native shim into app/src/main/jniLibs
+gradle assembleDebug     # debug APK
 gradle assembleRelease   # signed release
 ```
+
+The native library is checked in prebuilt, so `gradle assembleRelease` works
+without a C toolchain. `make -C app/src/main/cpp` rebuilds it from
+[app/src/main/cpp/doppelisk_shim.c](app/src/main/cpp/doppelisk_shim.c) and needs a
+cross compiler plus a copy of the device's bionic libraries;
+[app/src/main/cpp/README.md](app/src/main/cpp/README.md) explains
+both that path and the NDK/CMake one.
 
 ## Limitations
 

@@ -22,3 +22,7 @@ local.properties
 *.keystore
 keystore.properties
 signing.properties
+
+# Native shim intermediates; the copy under app/src/main/jniLibs is tracked
+/app/src/main/cpp/*.o
+/app/src/main/cpp/libdoppelisk_shim.so
