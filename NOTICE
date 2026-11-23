@@ -1,0 +1,75 @@
+Doppelisk
+Copyright 2026 Abdullah Al Mamun
+
+This product includes software developed by third parties. The notices below
+are provided in accordance with their licenses. Full license texts are
+available at the URLs given; the Apache License 2.0 text is also in LICENSE.
+
+--------------------------------------------------------------------------------
+libphonenumber
+Copyright Google LLC
+License: Apache License 2.0
+https://github.com/google/libphonenumber
+
+  Used for phone-number validation, E.164 formatting, and the per-region
+  mobile numbering plans. The operator prefix table shipped as
+  core/src/main/resources/carriers/series.json is derived from libphonenumber's
+  carrier metadata.
+
+--------------------------------------------------------------------------------
+libxposed API and service
+License: Apache License 2.0
+https://github.com/libxposed/api
+https://github.com/libxposed/service
+
+  The Xposed module interface and the manager/framework service protocol.
+
+--------------------------------------------------------------------------------
+AndroidX, Jetpack Compose, and Material Components
+Copyright The Android Open Source Project
+License: Apache License 2.0
+https://developer.android.com/jetpack/androidx
+
+--------------------------------------------------------------------------------
+Kotlin, kotlinx.serialization, and kotlinx.coroutines
+Copyright JetBrains s.r.o.
+License: Apache License 2.0
+https://github.com/JetBrains/kotlin
+https://github.com/Kotlin/kotlinx.serialization
+https://github.com/Kotlin/kotlinx.coroutines
+
+--------------------------------------------------------------------------------
+mcc-mnc-list
+License: MIT
+https://github.com/pbakondy/mcc-mnc-list
+
+  Source of the operator catalog shipped as
+  core/src/main/resources/carriers/catalog.json (MIT-licensed data compiled
+  from public MCC/MNC tables).
+
+  MIT License
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+--------------------------------------------------------------------------------
+Device chassis catalog
+The shipped chassis data (app/src/main/assets/chassis/catalog.json) is compiled
+from public stock firmware/build metadata and published device specifications.
+Product names and build identifiers are the property of their respective
+manufacturers and are used here only to describe the hardware a profile claims.

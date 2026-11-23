@@ -1,0 +1,1143 @@
+{
+  "version": 1,
+  "provenance": {
+    "source": "Public stock firmware metadata and published device specifications",
+    "notes": "Compiled from vendor OTA metadata and manufacturer spec sheets. Verify against current OTA metadata before relying on a value."
+  },
+  "chassis": [
+    {
+      "id": "pixel8pro-husky",
+      "name": "Google Pixel 8 Pro",
+      "build": {
+        "manufacturer": "Google",
+        "brand": "google",
+        "model": "Pixel 8 Pro",
+        "device": "husky",
+        "product": "husky",
+        "board": "husky",
+        "hardware": "husky",
+        "bootloader": "ripcurrent-16.3-13642541",
+        "release": "16",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "16",
+            "buildId": "CP1A.260505.005",
+            "incremental": "15081906",
+            "securityPatch": "2026-05-05",
+            "displayId": "CP1A.260505.005",
+            "fingerprint": "google/husky/husky:16/CP1A.260505.005/15081906:user/release-keys",
+            "bootloader": "ripcurrent-16.3-13642541",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "abfarm-release",
+            "user": "android-build"
+          },
+          {
+            "release": "16",
+            "buildId": "BP4A.260205.001",
+            "incremental": "14624666",
+            "securityPatch": "2026-02-05",
+            "displayId": "BP4A.260205.001",
+            "fingerprint": "google/husky/husky:16/BP4A.260205.001/14624666:user/release-keys",
+            "bootloader": "ripcurrent-16.3-13642541",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "abfarm-release",
+            "user": "android-build"
+          },
+          {
+            "release": "16",
+            "buildId": "BP2A.250805.005",
+            "incremental": "13691446",
+            "securityPatch": "2025-08-05",
+            "displayId": "BP2A.250805.005",
+            "fingerprint": "google/husky/husky:16/BP2A.250805.005/13691446:user/release-keys",
+            "bootloader": "ripcurrent-16.2-13291556",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "abfarm-release",
+            "user": "android-build"
+          }
+        ]
+      },
+      "display": {
+        "width": 1344,
+        "height": 2992,
+        "density": 448,
+        "refreshRates": [
+          60,
+          120
+        ],
+        "screenInches": "6.7"
+      },
+      "hardware": {
+        "soc": "google/tensor-g3",
+        "gpuRenderer": "Mali-G715",
+        "cpuHardware": "husky",
+        "kernel": "5.15.153-android16-11-g3f8a2c1d4e6b",
+        "baseband": "g5300q-250505-250605-B-15081906",
+        "wifiChipVendor": "Google",
+        "wifiOui": "F8:1A:2B",
+        "cameraIds": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "codecPrefix": "c2.google."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "310260",
+          "310410"
+        ],
+        "carriers": [
+          "T-Mobile",
+          "AT&T"
+        ],
+        "countryIso": "US",
+        "timezone": "America/New_York"
+      }
+    },
+    {
+      "id": "pixel8a-akita",
+      "name": "Google Pixel 8a",
+      "build": {
+        "manufacturer": "Google",
+        "brand": "google",
+        "model": "Pixel 8a",
+        "device": "akita",
+        "product": "akita",
+        "board": "akita",
+        "hardware": "akita",
+        "bootloader": "akita-16.3-13642541",
+        "release": "16",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "16",
+            "buildId": "CP1A.260505.005",
+            "incremental": "15081906",
+            "securityPatch": "2026-05-05",
+            "displayId": "CP1A.260505.005",
+            "fingerprint": "google/akita/akita:16/CP1A.260505.005/15081906:user/release-keys",
+            "bootloader": "akita-16.3-13642541",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "abfarm-release",
+            "user": "android-build"
+          },
+          {
+            "release": "16",
+            "buildId": "BP4A.260205.001",
+            "incremental": "14624666",
+            "securityPatch": "2026-02-05",
+            "displayId": "BP4A.260205.001",
+            "fingerprint": "google/akita/akita:16/BP4A.260205.001/14624666:user/release-keys",
+            "bootloader": "akita-16.3-13642541",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "abfarm-release",
+            "user": "android-build"
+          },
+          {
+            "release": "16",
+            "buildId": "BP2A.250605.031.A2",
+            "incremental": "13578606",
+            "securityPatch": "2025-06-05",
+            "displayId": "BP2A.250605.031.A2",
+            "fingerprint": "google/akita/akita:16/BP2A.250605.031.A2/13578606:user/release-keys",
+            "bootloader": "akita-16.2-13291556",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "abfarm-release",
+            "user": "android-build"
+          }
+        ]
+      },
+      "display": {
+        "width": 1080,
+        "height": 2400,
+        "density": 420,
+        "refreshRates": [
+          60,
+          120
+        ],
+        "screenInches": "6.1"
+      },
+      "hardware": {
+        "soc": "google/tensor-g3",
+        "gpuRenderer": "Mali-G715",
+        "cpuHardware": "akita",
+        "kernel": "5.15.153-android16-11-g4a5b6c7d8e9f",
+        "baseband": "g5300q-250405-250505-B-13578606",
+        "wifiChipVendor": "Google",
+        "wifiOui": "F8:1A:2C",
+        "cameraIds": [
+          "0",
+          "1",
+          "2"
+        ],
+        "codecPrefix": "c2.google."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "310260"
+        ],
+        "carriers": [
+          "T-Mobile"
+        ],
+        "countryIso": "US",
+        "timezone": "America/New_York"
+      }
+    },
+    {
+      "id": "pixel7pro-cheetah",
+      "name": "Google Pixel 7 Pro",
+      "build": {
+        "manufacturer": "Google",
+        "brand": "google",
+        "model": "Pixel 7 Pro",
+        "device": "cheetah",
+        "product": "cheetah",
+        "board": "cheetah",
+        "hardware": "cheetah",
+        "bootloader": "cloudripper-16.3-13642542",
+        "release": "16",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "16",
+            "buildId": "CP1A.260405.005",
+            "incremental": "15001963",
+            "securityPatch": "2026-04-05",
+            "displayId": "CP1A.260405.005",
+            "fingerprint": "google/cheetah/cheetah:16/CP1A.260405.005/15001963:user/release-keys",
+            "bootloader": "cloudripper-16.3-13642542",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "abfarm-release",
+            "user": "android-build"
+          },
+          {
+            "release": "16",
+            "buildId": "BP4A.251205.006",
+            "incremental": "14401865",
+            "securityPatch": "2025-12-05",
+            "displayId": "BP4A.251205.006",
+            "fingerprint": "google/cheetah/cheetah:16/BP4A.251205.006/14401865:user/release-keys",
+            "bootloader": "cloudripper-16.3-13642542",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "abfarm-release",
+            "user": "android-build"
+          }
+        ]
+      },
+      "display": {
+        "width": 1440,
+        "height": 3120,
+        "density": 560,
+        "refreshRates": [
+          60,
+          120
+        ],
+        "screenInches": "6.7"
+      },
+      "hardware": {
+        "soc": "google/tensor-g2",
+        "gpuRenderer": "Mali-G710",
+        "cpuHardware": "cheetah",
+        "kernel": "5.10.209-android16-11-g5b6c7d8e9f0a",
+        "baseband": "g5300i-250405-250505-B-15001963",
+        "wifiChipVendor": "Google",
+        "wifiOui": "F8:1A:2D",
+        "cameraIds": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "codecPrefix": "c2.google."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "310260"
+        ],
+        "carriers": [
+          "T-Mobile"
+        ],
+        "countryIso": "US",
+        "timezone": "America/New_York"
+      }
+    },
+    {
+      "id": "galaxy-s24-e1s",
+      "name": "Samsung Galaxy S24",
+      "build": {
+        "manufacturer": "samsung",
+        "brand": "samsung",
+        "model": "SM-S921B",
+        "device": "e1s",
+        "product": "e1sxxx",
+        "board": "s5e9945",
+        "hardware": "s5e9945",
+        "bootloader": "S921BXXSFDZF2",
+        "release": "16",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "16",
+            "buildId": "BP4A.251205.006",
+            "incremental": "S921BXXSFDZF2",
+            "securityPatch": "2026-06-05",
+            "displayId": "BP4A.251205.006.S921BXXSFDZF2",
+            "fingerprint": "samsung/e1sxxx/e1s:16/BP4A.251205.006/S921BXXSFDZF2:user/release-keys",
+            "bootloader": "S921BXXSFDZF2",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "SWDHUB",
+            "user": "dpi"
+          }
+        ]
+      },
+      "display": {
+        "width": 1080,
+        "height": 2340,
+        "density": 420,
+        "refreshRates": [
+          60,
+          120
+        ],
+        "screenInches": "6.2"
+      },
+      "hardware": {
+        "soc": "samsung/exynos2400",
+        "gpuRenderer": "Xclipse 940",
+        "cpuHardware": "s5e9945",
+        "kernel": "6.1.75-android14-11-g6c7d8e9f0a1b",
+        "baseband": "S921BXXSFDZF2",
+        "wifiChipVendor": "Samsung",
+        "wifiOui": "24:4B:03",
+        "cameraIds": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "codecPrefix": "c2.exynos."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "23410",
+          "310260"
+        ],
+        "carriers": [
+          "O2",
+          "T-Mobile"
+        ],
+        "countryIso": "GB",
+        "timezone": "Europe/London"
+      }
+    },
+    {
+      "id": "galaxy-a34-a34x",
+      "name": "Samsung Galaxy A34 5G",
+      "build": {
+        "manufacturer": "samsung",
+        "brand": "samsung",
+        "model": "SM-A346E",
+        "device": "a34x",
+        "product": "a34xdxx",
+        "board": "a34x",
+        "hardware": "mt6877",
+        "bootloader": "A346EXXU4BWK4",
+        "release": "14",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "14",
+            "buildId": "UP1A.231005.007",
+            "incremental": "A346EXXU4BWK4",
+            "securityPatch": "2023-11-01",
+            "displayId": "UP1A.231005.007.A346EXXU4BWK4",
+            "fingerprint": "samsung/a34xdxx/a34x:14/UP1A.231005.007/A346EXXU4BWK4:user/release-keys",
+            "bootloader": "A346EXXU4BWK4",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "SWDK6008",
+            "user": "dpi"
+          }
+        ]
+      },
+      "display": {
+        "width": 1080,
+        "height": 2340,
+        "density": 450,
+        "refreshRates": [
+          60,
+          120
+        ],
+        "screenInches": "6.6"
+      },
+      "hardware": {
+        "soc": "mediatek/mt6877",
+        "gpuRenderer": "Mali-G68 MC4",
+        "cpuHardware": "mt6877",
+        "kernel": "5.10.209-android14-11-g7d8e9f0a1b2c",
+        "baseband": "A346EXXU4BWK4",
+        "wifiChipVendor": "MediaTek",
+        "wifiOui": "4C:EB:BD",
+        "cameraIds": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "codecPrefix": "c2.mtk."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "23410"
+        ],
+        "carriers": [
+          "O2"
+        ],
+        "countryIso": "GB",
+        "timezone": "Europe/London"
+      }
+    },
+    {
+      "id": "galaxy-a53-a53x",
+      "name": "Samsung Galaxy A53 5G",
+      "build": {
+        "manufacturer": "samsung",
+        "brand": "samsung",
+        "model": "SM-A536E",
+        "device": "a53x",
+        "product": "a53xnsxx",
+        "board": "s5e8825",
+        "hardware": "s5e8825",
+        "bootloader": "A536EXXU4BVKB",
+        "release": "13",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "13",
+            "buildId": "TP1A.220624.014",
+            "incremental": "A536EXXU4BVKB",
+            "securityPatch": "2022-11-01",
+            "displayId": "TP1A.220624.014.A536EXXU4BVKB",
+            "fingerprint": "samsung/a53xnsxx/a53x:13/TP1A.220624.014/A536EXXU4BVKB:user/release-keys",
+            "bootloader": "A536EXXU4BVKB",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "21DKG905",
+            "user": "dpi"
+          }
+        ]
+      },
+      "display": {
+        "width": 1080,
+        "height": 2400,
+        "density": 450,
+        "refreshRates": [
+          60,
+          120
+        ],
+        "screenInches": "6.5"
+      },
+      "hardware": {
+        "soc": "samsung/exynos1280",
+        "gpuRenderer": "Mali-G68",
+        "cpuHardware": "s5e8825",
+        "kernel": "5.10.168-android13-11-g8e9f0a1b2c3d",
+        "baseband": "A536EXXU4BVKB",
+        "wifiChipVendor": "Samsung",
+        "wifiOui": "24:4B:04",
+        "cameraIds": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "codecPrefix": "c2.exynos."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "23410"
+        ],
+        "carriers": [
+          "O2"
+        ],
+        "countryIso": "GB",
+        "timezone": "Europe/London"
+      }
+    },
+    {
+      "id": "galaxy-a24-a24",
+      "name": "Samsung Galaxy A24",
+      "build": {
+        "manufacturer": "samsung",
+        "brand": "samsung",
+        "model": "SM-A245F",
+        "device": "a24",
+        "product": "a24nsxx",
+        "board": "a24",
+        "hardware": "mt6789",
+        "bootloader": "A245FXXU1AWC3",
+        "release": "13",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "13",
+            "buildId": "TP1A.220624.014",
+            "incremental": "A245FXXU1AWC3",
+            "securityPatch": "2023-03-01",
+            "displayId": "TP1A.220624.014.A245FXXU1AWC3",
+            "fingerprint": "samsung/a24nsxx/a24:13/TP1A.220624.014/A245FXXU1AWC3:user/release-keys",
+            "bootloader": "A245FXXU1AWC3",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "21DK7B23",
+            "user": "dpi"
+          }
+        ]
+      },
+      "display": {
+        "width": 1080,
+        "height": 2340,
+        "density": 450,
+        "refreshRates": [
+          60,
+          90
+        ],
+        "screenInches": "6.5"
+      },
+      "hardware": {
+        "soc": "mediatek/mt6789",
+        "gpuRenderer": "Mali-G57 MC2",
+        "cpuHardware": "mt6789",
+        "kernel": "5.10.168-android13-11-g9f0a1b2c3d4e",
+        "baseband": "A245FXXU1AWC3",
+        "wifiChipVendor": "MediaTek",
+        "wifiOui": "4C:EB:BE",
+        "cameraIds": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "codecPrefix": "c2.mtk."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "23410"
+        ],
+        "carriers": [
+          "O2"
+        ],
+        "countryIso": "GB",
+        "timezone": "Europe/London"
+      }
+    },
+    {
+      "id": "galaxy-a73-a73xq",
+      "name": "Samsung Galaxy A73 5G",
+      "build": {
+        "manufacturer": "samsung",
+        "brand": "samsung",
+        "model": "SM-A736B",
+        "device": "a73xq",
+        "product": "a73xqxx",
+        "board": "lahaina",
+        "hardware": "qcom",
+        "bootloader": "A736BXXU5CWH7",
+        "release": "13",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "13",
+            "buildId": "TP1A.220624.014",
+            "incremental": "A736BXXU5CWH7",
+            "securityPatch": "2023-08-01",
+            "displayId": "TP1A.220624.014.A736BXXU5CWH7",
+            "fingerprint": "samsung/a73xqxx/a73xq:13/TP1A.220624.014/A736BXXU5CWH7:user/release-keys",
+            "bootloader": "A736BXXU5CWH7",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "21DKGA03",
+            "user": "dpi"
+          }
+        ]
+      },
+      "display": {
+        "width": 1080,
+        "height": 2400,
+        "density": 450,
+        "refreshRates": [
+          60,
+          120
+        ],
+        "screenInches": "6.7"
+      },
+      "hardware": {
+        "soc": "qualcomm/sm7325",
+        "gpuRenderer": "Adreno 642L",
+        "cpuHardware": "qcom",
+        "kernel": "5.4.254-android13-11-g0a1b2c3d4e5f",
+        "baseband": "A736BXXU5CWH7",
+        "wifiChipVendor": "Qualcomm",
+        "wifiOui": "88:9F:6F",
+        "cameraIds": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "codecPrefix": "c2.qti."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "23410"
+        ],
+        "carriers": [
+          "O2"
+        ],
+        "countryIso": "GB",
+        "timezone": "Europe/London"
+      }
+    },
+    {
+      "id": "galaxy-m21-m21",
+      "name": "Samsung Galaxy M21",
+      "build": {
+        "manufacturer": "samsung",
+        "brand": "samsung",
+        "model": "SM-M215F",
+        "device": "m21",
+        "product": "m21nsxx",
+        "board": "exynos9611",
+        "hardware": "exynos9611",
+        "bootloader": "M215FXXU2ATI9",
+        "release": "10",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "10",
+            "buildId": "QP1A.190711.020",
+            "incremental": "M215FXXU2ATI9",
+            "securityPatch": "2020-09-01",
+            "displayId": "QP1A.190711.020.M215FXXU2ATI9",
+            "fingerprint": "samsung/m21nsxx/m21:10/QP1A.190711.020/M215FXXU2ATI9:user/release-keys",
+            "bootloader": "M215FXXU2ATI9",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "SWDHUB",
+            "user": "dpi"
+          }
+        ]
+      },
+      "display": {
+        "width": 1080,
+        "height": 2340,
+        "density": 420,
+        "refreshRates": [
+          60
+        ],
+        "screenInches": "6.4"
+      },
+      "hardware": {
+        "soc": "samsung/exynos9611",
+        "gpuRenderer": "Mali-G72 MP3",
+        "cpuHardware": "exynos9611",
+        "kernel": "4.14.190-android10-11-g1b2c3d4e5f6a",
+        "baseband": "M215FXXU2ATI9",
+        "wifiChipVendor": "Samsung",
+        "wifiOui": "24:4B:05",
+        "cameraIds": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "codecPrefix": "OMX.Exynos."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "40445"
+        ],
+        "carriers": [
+          "Airtel"
+        ],
+        "countryIso": "IN",
+        "timezone": "Asia/Kolkata"
+      }
+    },
+    {
+      "id": "xiaomi-13-fuxi",
+      "name": "Xiaomi 13",
+      "build": {
+        "manufacturer": "Xiaomi",
+        "brand": "Xiaomi",
+        "model": "2211133G",
+        "device": "fuxi",
+        "product": "fuxi_global",
+        "board": "kalama",
+        "hardware": "qcom",
+        "bootloader": "unknown",
+        "release": "14",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "14",
+            "buildId": "UKQ1.230804.001",
+            "incremental": "V816.0.1.0.UMCMIXM",
+            "securityPatch": "2023-12-01",
+            "displayId": "UKQ1.230804.001 release-keys",
+            "fingerprint": "Xiaomi/fuxi_global/fuxi:14/UKQ1.230804.001/V816.0.1.0.UMCMIXM:user/release-keys",
+            "bootloader": "unknown",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "pangu-build-component-system-226768-x7pn1-9k470-wsg36",
+            "user": "builder"
+          }
+        ]
+      },
+      "display": {
+        "width": 1080,
+        "height": 2400,
+        "density": 440,
+        "refreshRates": [
+          60,
+          120
+        ],
+        "screenInches": "6.36"
+      },
+      "hardware": {
+        "soc": "qualcomm/sm8550",
+        "gpuRenderer": "Adreno 740",
+        "cpuHardware": "qcom",
+        "kernel": "5.15.144-android14-11-g2c3d4e5f6a7b",
+        "baseband": "MPSS.DE.2.0-00045-KALAMA_GEN1",
+        "wifiChipVendor": "Qualcomm",
+        "wifiOui": "64:5D:86",
+        "cameraIds": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "codecPrefix": "c2.qti."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "23410"
+        ],
+        "carriers": [
+          "O2"
+        ],
+        "countryIso": "GB",
+        "timezone": "Europe/London"
+      }
+    },
+    {
+      "id": "redmi-note10pro-sweet",
+      "name": "Redmi Note 10 Pro",
+      "build": {
+        "manufacturer": "Xiaomi",
+        "brand": "Redmi",
+        "model": "M2101K6G",
+        "device": "sweet",
+        "product": "sweet_global",
+        "board": "sweet",
+        "hardware": "qcom",
+        "bootloader": "unknown",
+        "release": "11",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "11",
+            "buildId": "RKQ1.200826.002",
+            "incremental": "V12.0.6.0.RKFMIXM",
+            "securityPatch": "2021-03-01",
+            "displayId": "RKQ1.200826.002 release-keys",
+            "fingerprint": "Redmi/sweet_global/sweet:11/RKQ1.200826.002/V12.0.6.0.RKFMIXM:user/release-keys",
+            "bootloader": "unknown",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "xiaomi",
+            "user": "builder"
+          }
+        ]
+      },
+      "display": {
+        "width": 1080,
+        "height": 2400,
+        "density": 440,
+        "refreshRates": [
+          60,
+          120
+        ],
+        "screenInches": "6.67"
+      },
+      "hardware": {
+        "soc": "qualcomm/sm7150",
+        "gpuRenderer": "Adreno 618",
+        "cpuHardware": "qcom",
+        "kernel": "4.14.190-android11-11-g3d4e5f6a7b8c",
+        "baseband": "MPSS.AT.4.0-00045-SM7150",
+        "wifiChipVendor": "Qualcomm",
+        "wifiOui": "64:5D:87",
+        "cameraIds": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "codecPrefix": "c2.qti."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "40445"
+        ],
+        "carriers": [
+          "Airtel"
+        ],
+        "countryIso": "IN",
+        "timezone": "Asia/Kolkata"
+      }
+    },
+    {
+      "id": "realme-c67-re5c91l1",
+      "name": "Realme C67 4G",
+      "build": {
+        "manufacturer": "realme",
+        "brand": "realme",
+        "model": "RMX3890",
+        "device": "RE5C91L1",
+        "product": "RMX3890RU",
+        "board": "sm6225",
+        "hardware": "qcom",
+        "bootloader": "unknown",
+        "release": "14",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "14",
+            "buildId": "UKQ1.230917.001",
+            "incremental": "U.202504271845",
+            "securityPatch": "2025-04-01",
+            "displayId": "UKQ1.230917.001",
+            "fingerprint": "realme/RMX3890RU/RE5C91L1:14/UKQ1.230917.001/U.202504271845:user/release-keys",
+            "bootloader": "unknown",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "buildhost",
+            "user": "builder"
+          }
+        ]
+      },
+      "display": {
+        "width": 1080,
+        "height": 2400,
+        "density": 450,
+        "refreshRates": [
+          60,
+          90
+        ],
+        "screenInches": "6.72"
+      },
+      "hardware": {
+        "soc": "qualcomm/sm6225",
+        "gpuRenderer": "Adreno 610",
+        "cpuHardware": "qcom",
+        "kernel": "5.15.144-android14-11-g4e5f6a7b8c9d",
+        "baseband": "MPSS.DE.3.0-00045-SM6225",
+        "wifiChipVendor": "Qualcomm",
+        "wifiOui": "64:5D:88",
+        "cameraIds": [
+          "0",
+          "1",
+          "2"
+        ],
+        "codecPrefix": "c2.qti."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "40445"
+        ],
+        "carriers": [
+          "Airtel"
+        ],
+        "countryIso": "IN",
+        "timezone": "Asia/Kolkata"
+      }
+    },
+    {
+      "id": "vivo-v27-v2231",
+      "name": "Vivo V27",
+      "build": {
+        "manufacturer": "vivo",
+        "brand": "vivo",
+        "model": "V2231",
+        "device": "V2231",
+        "product": "V2231T",
+        "board": "k6886v1_64",
+        "hardware": "mt6886",
+        "bootloader": "unknown",
+        "release": "13",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "13",
+            "buildId": "TP1A.220624.014",
+            "incremental": "compiler04172144",
+            "securityPatch": "2023-04-01",
+            "displayId": "TP1A.220624.014 release-keys",
+            "fingerprint": "vivo/V2231T/V2231:13/TP1A.220624.014/compiler04172144:user/release-keys",
+            "bootloader": "unknown",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "comdg01146139",
+            "user": "compiler"
+          }
+        ]
+      },
+      "display": {
+        "width": 1080,
+        "height": 2400,
+        "density": 440,
+        "refreshRates": [
+          60,
+          120
+        ],
+        "screenInches": "6.78"
+      },
+      "hardware": {
+        "soc": "mediatek/mt6886",
+        "gpuRenderer": "Mali-G610 MC6",
+        "cpuHardware": "mt6886",
+        "kernel": "5.10.168-android13-11-g5f6a7b8c9d0e",
+        "baseband": "MOLY.NR16.R1.TC8.PR1.SP.V1.P20",
+        "wifiChipVendor": "MediaTek",
+        "wifiOui": "4C:EB:BF",
+        "cameraIds": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "codecPrefix": "c2.mtk."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "40445"
+        ],
+        "carriers": [
+          "Airtel"
+        ],
+        "countryIso": "IN",
+        "timezone": "Asia/Kolkata"
+      }
+    },
+    {
+      "id": "oneplus-nord-n200-oneplusn200",
+      "name": "OnePlus Nord N200",
+      "build": {
+        "manufacturer": "OnePlus",
+        "brand": "OnePlus",
+        "model": "DE2117",
+        "device": "OnePlusN200",
+        "product": "OnePlusN200",
+        "board": "holi",
+        "hardware": "qcom",
+        "bootloader": "unknown",
+        "release": "11",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "11",
+            "buildId": "RKQ1.201217.002",
+            "incremental": "2203021418",
+            "securityPatch": "2022-03-01",
+            "displayId": "DE2117_10_220302",
+            "fingerprint": "OnePlus/OnePlusN200/OnePlusN200:11/RKQ1.201217.002/2203021418:user/release-keys",
+            "bootloader": "unknown",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "rd-build-79",
+            "user": "OnePlus"
+          }
+        ]
+      },
+      "display": {
+        "width": 1080,
+        "height": 2400,
+        "density": 450,
+        "refreshRates": [
+          60,
+          90
+        ],
+        "screenInches": "6.49"
+      },
+      "hardware": {
+        "soc": "qualcomm/sm4350",
+        "gpuRenderer": "Adreno 619",
+        "cpuHardware": "qcom",
+        "kernel": "5.4.254-android11-11-g6a7b8c9d0e1f",
+        "baseband": "MPSS.AT.4.0-00045-SM4350",
+        "wifiChipVendor": "Qualcomm",
+        "wifiOui": "64:5D:89",
+        "cameraIds": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "codecPrefix": "c2.qti."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "310260"
+        ],
+        "carriers": [
+          "T-Mobile"
+        ],
+        "countryIso": "US",
+        "timezone": "America/New_York"
+      }
+    },
+    {
+      "id": "oneplus-13-op5d55l1",
+      "name": "OnePlus 13",
+      "build": {
+        "manufacturer": "OnePlus",
+        "brand": "OnePlus",
+        "model": "CPH2653",
+        "device": "OP5D55L1",
+        "product": "CPH2653EEA",
+        "board": "sun",
+        "hardware": "qcom",
+        "bootloader": "unknown",
+        "release": "16",
+        "supportedAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "armeabi"
+        ],
+        "buildOptions": [
+          {
+            "release": "16",
+            "buildId": "BP2A.250605.015",
+            "incremental": "V.R4T3.1338e95_e24685_de185d",
+            "securityPatch": "2025-06-01",
+            "displayId": "BP2A.250605.015",
+            "fingerprint": "OnePlus/CPH2653EEA/OP5D55L1:16/BP2A.250605.015/V.R4T3.1338e95_e24685_de185d:user/release-keys",
+            "bootloader": "unknown",
+            "buildType": "user",
+            "tags": "release-keys",
+            "host": "buildhost",
+            "user": "builder"
+          }
+        ]
+      },
+      "display": {
+        "width": 1440,
+        "height": 3168,
+        "density": 560,
+        "refreshRates": [
+          60,
+          120
+        ],
+        "screenInches": "6.8"
+      },
+      "hardware": {
+        "soc": "qualcomm/sm8750",
+        "gpuRenderer": "Adreno 830",
+        "cpuHardware": "qcom",
+        "kernel": "6.6.30-android16-11-g7b8c9d0e1f2a",
+        "baseband": "MPSS.DE.3.0-00045-SM8750",
+        "wifiChipVendor": "Qualcomm",
+        "wifiOui": "64:5D:8A",
+        "cameraIds": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "codecPrefix": "c2.qti."
+      },
+      "telephony": {
+        "plausibleMccMnc": [
+          "23410"
+        ],
+        "carriers": [
+          "O2"
+        ],
+        "countryIso": "GB",
+        "timezone": "Europe/London"
+      }
+    }
+  ]
+}
