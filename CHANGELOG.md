@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-11-23
+
+### Added
+
+- The native shim is open source. `libdoppelisk_shim.so` is now built from
+  `app/src/main/cpp/doppelisk_shim.c`, with the Makefile, an NDK/CMake path and
+  a protocol reference next to it.
+
 ## [1.0.0] — 2026-11-23
 
 First public release.
