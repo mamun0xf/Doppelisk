@@ -171,8 +171,6 @@ fun AboutScreen(
             ListGroup(modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
                 LimitRow("Attestation", "Hardware-backed verdicts are not forged.")
                 ListDivider(startIndent = 16.dp)
-                LimitRow("Subscription list", "Reports the device's real subscriptions.")
-                ListDivider(startIndent = 16.dp)
                 LimitRow("System properties", "Read-only; the property store is not rewritten.")
             }
         }

@@ -42,6 +42,9 @@ All notable changes to this project are documented here. The format follows
 - `SubscriptionInfo` copies are allocated with `Unsafe` instead of
   `Object.clone()`. The class is `Parcelable`, not `Cloneable`, so the old copy
   path threw and never produced an entry.
+- About → Limits no longer lists the subscription list as unspoofable. That row
+  described the code before the SIM surface was rebuilt, and it now reports the
+  profile's slots.
 
 ## [1.1.0] — 2026-11-23
 
