@@ -601,10 +601,8 @@ private fun FieldEditorSheet(
                         )
                     }
 
-                    if (field.key == IdentityFields.TELEPHONY_PHONE_1 ||
-                        field.key == IdentityFields.TELEPHONY_PHONE_2
-                    ) {
-                        val slot = if (field.key == IdentityFields.TELEPHONY_PHONE_2) 1 else 0
+                    if (field.key in IdentityFields.TELEPHONY_PHONES) {
+                        val slot = IdentityFields.TELEPHONY_PHONES.indexOf(field.key)
                         val real = realNumbers.getOrNull(slot).orEmpty()
 
                         Row(verticalAlignment = Alignment.CenterVertically) {

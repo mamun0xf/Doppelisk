@@ -112,8 +112,7 @@ object GenericHooks {
                 IdentityFields.TELEPHONY_MNC,
                 IdentityFields.TELEPHONY_CARRIER,
                 IdentityFields.TELEPHONY_COUNTRY,
-                IdentityFields.TELEPHONY_PHONE_1,
-                IdentityFields.TELEPHONY_PHONE_2,
+                *IdentityFields.TELEPHONY_PHONES.toTypedArray(),
                 IdentityFields.TELEPHONY_SIM_SLOTS,
             )
         ) {

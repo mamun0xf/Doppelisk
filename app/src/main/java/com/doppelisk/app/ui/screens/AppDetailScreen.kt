@@ -1,5 +1,8 @@
 package com.doppelisk.app.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -22,6 +25,7 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -35,6 +39,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,6 +92,7 @@ fun AppDetailScreen(
     onActivate: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
     onClearData: (String) -> Unit,
+    onExport: (String, Uri, Boolean) -> Unit,
     onRequestScope: () -> Unit,
     onRelaunch: () -> Unit,
     onOpenAudit: () -> Unit,
@@ -114,6 +120,33 @@ fun AppDetailScreen(
 
     var pendingDelete by remember { mutableStateOf<ProfileRow?>(null) }
     var pendingClear by remember { mutableStateOf<ProfileRow?>(null) }
+
+    // SAF takes over the screen, so the id is saved rather than merely
+    // remembered: without it a rotation behind the picker would return a URI
+    // that nothing knows how to export.
+    var exportId by rememberSaveable { mutableStateOf<String?>(null) }
+
+    val exportJson = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        val id = exportId
+        exportId = null
+        if (uri != null && id != null) onExport(id, uri, false)
+    }
+    val exportZip = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip"),
+    ) { uri ->
+        val id = exportId
+        exportId = null
+        if (uri != null && id != null) onExport(id, uri, true)
+    }
+
+    fun startExport(profile: ProfileRow, includeData: Boolean) {
+        exportId = profile.id
+        val extension = if (includeData) "doppelisk.zip" else "doppelisk.json"
+        val name = exportFileName(profile.label, extension)
+        if (includeData) exportZip.launch(name) else exportJson.launch(name)
+    }
 
     val active = row.activeProfile
     val activeArtifact = when {
@@ -175,6 +208,8 @@ fun AppDetailScreen(
                         onUse = { onActivate(profile.id, false) },
                         onClearData = { pendingClear = profile },
                         onDelete = { pendingDelete = profile },
+                        onExportJson = { startExport(profile, includeData = false) },
+                        onExportZip = { startExport(profile, includeData = true) },
                     )
                     if (index != row.displayProfiles.lastIndex) {
                         ListDivider(startIndent = 58.dp)
@@ -267,6 +302,8 @@ private fun ProfileListRow(
     onUse: () -> Unit,
     onClearData: () -> Unit,
     onDelete: () -> Unit,
+    onExportJson: () -> Unit,
+    onExportZip: () -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
 
@@ -329,6 +366,26 @@ private fun ProfileListRow(
                 )
             }
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                // Only stored profiles have anything to export: an untouched
+                // Default row has no file behind it.
+                if (profile.stored) {
+                    DropdownMenuItem(
+                        text = { Text("Export profile (.json)") },
+                        leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                        onClick = {
+                            menu = false
+                            onExportJson()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Export profile + data (.zip)") },
+                        leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                        onClick = {
+                            menu = false
+                            onExportZip()
+                        },
+                    )
+                }
                 DropdownMenuItem(
                     text = { Text("Clear data") },
                     leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
@@ -359,6 +416,18 @@ private fun ProfileListRow(
             }
         }
     }
+}
+
+/**
+ * A default document name SAF providers will accept.
+ *
+ * Labels are free text and may contain slashes or spaces, which a document
+ * provider can read as a path or reject outright; only the safe characters
+ * survive, and an all-punctuation label falls back to a literal name.
+ */
+private fun exportFileName(label: String, extension: String): String {
+    val safe = label.replace(Regex("[^A-Za-z0-9._-]"), "").trim('.', '_', '-')
+    return "${safe.ifEmpty { "profile" }}.$extension"
 }
 
 @Composable

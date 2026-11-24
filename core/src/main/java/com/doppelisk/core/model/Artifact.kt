@@ -105,6 +105,15 @@ data class NetworkPolicy(
     val dns: String? = null,
     /** `block`, `allow` or `prefer`. */
     val ipv6: String = "block",
+    /**
+     * What the target app sees about VPN connectivity: `default`, `on`, `off`
+     * or `reversed`.
+     *
+     * Independent of [mode]: proxying a profile does not imply that the VPN
+     * must be hidden. `default` reports the real state, `off` always says there
+     * is no VPN, `on` always says there is one, and `reversed` inverts it.
+     */
+    val vpn: String = "default",
 )
 
 /** Location shaping for the target package. */

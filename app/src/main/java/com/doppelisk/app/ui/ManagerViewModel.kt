@@ -1,6 +1,7 @@
 package com.doppelisk.app.ui
 
 import android.app.Application
+import android.net.Uri
 import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -283,6 +284,58 @@ class ManagerViewModel(application: Application) : AndroidViewModel(application)
                 onSuccess()
             } else {
                 postError(result.exceptionOrNull()?.message ?: "Could not clear the profile data.")
+            }
+        }
+    }
+
+    // ------------------------------------------------------------ transfer
+
+    /**
+     * Writes [id] to the document the user picked.
+     *
+     * The repository streams from the daemon's staging file straight into the
+     * SAF document, so nothing here touches the profile payload itself.
+     */
+    fun exportProfile(id: String, destination: Uri, includeData: Boolean) {
+        viewModelScope.launch {
+            _state.update { it.copy(busyAction = "Exporting profile") }
+
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    ManagerRepository.exportProfile(getApplication(), id, destination, includeData)
+                }
+            }
+
+            _state.update { it.copy(busyAction = null) }
+            if (result.isSuccess) {
+                postMessage(if (includeData) "Profile and data exported" else "Profile exported")
+            } else {
+                postError(result.exceptionOrNull()?.message ?: "Could not export the profile.")
+            }
+        }
+    }
+
+    /**
+     * Imports the document the user picked and reloads the list.
+     *
+     * The imported profile belongs to whatever app the file names, so it may
+     * not be the app the user was looking at: a refresh is the only way the new
+     * row appears.
+     */
+    fun importProfile(source: Uri) {
+        viewModelScope.launch {
+            _state.update { it.copy(busyAction = "Importing profile") }
+
+            val result = withContext(Dispatchers.IO) {
+                runCatching { ManagerRepository.importProfile(getApplication(), source) }
+            }
+
+            _state.update { it.copy(busyAction = null) }
+            if (result.isSuccess) {
+                postMessage("Profile imported")
+                refresh(showSpinner = false)
+            } else {
+                postError(result.exceptionOrNull()?.message ?: "Could not import the profile.")
             }
         }
     }

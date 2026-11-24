@@ -26,6 +26,9 @@ object NetworkPolicyValidator {
 
     val IPV6_MODES: Set<String> = linkedSetOf("block", "direct", "proxy")
 
+    /** How the app is told about the device's real VPN state. */
+    val VPN_MODES: Set<String> = linkedSetOf("default", "on", "off", "reversed")
+
     private const val DEFAULT_SOCKS_PORT = 1080
 
     fun validate(policy: NetworkPolicy): NetworkValidation {
@@ -58,6 +61,11 @@ object NetworkPolicyValidator {
             if (dns != "block" && dns != "system" && !Regex("^[0-9a-fA-F:.]+$").matches(dns)) {
                 errors += "dns must be a literal address, 'system', or 'block'"
             }
+        }
+
+        val vpn = policy.vpn.trim().lowercase(Locale.ROOT)
+        if (vpn !in VPN_MODES) {
+            errors += "vpn must be one of " + VPN_MODES.joinToString()
         }
 
         return NetworkValidation(errors.isEmpty(), errors)

@@ -104,13 +104,15 @@ data class NetworkIds(
 /**
  * Cell identity surface.
  *
- * [phoneNumbers] is indexed by SIM slot: element 0 is slot 1 and element 1 is
- * slot 2. A blank entry means "this slot has no number", which is also how a
- * single-SIM profile is represented. Numbers are stored in E.164 form so the
- * hook can hand them to `getLine1Number` unchanged.
+ * [phoneNumbers] is indexed by SIM slot: element 0 is slot 1, element 3 is
+ * slot 4. A blank entry means "this slot has no number", which is also how a
+ * single-SIM profile is represented. Slots are contiguous: a number in slot 3
+ * requires one in slots 1 and 2. Numbers are stored in E.164 form so the hook
+ * can hand them to `getLine1Number` unchanged.
  *
  * [simSlots] is the number of slots the profile presents. `0` means "derive it
- * from the numbers": one slot when only slot 1 is set, two when slot 2 is too.
+ * from the numbers": one slot when only slot 1 is set, and so on up to
+ * [MAX_SIM_SLOTS].
  */
 @Serializable
 data class TelephonyIdentity(
@@ -126,9 +128,20 @@ data class TelephonyIdentity(
 
     /** The number of SIM slots this profile should present. */
     val effectiveSimSlots: Int
-        get() = when {
-            simSlots in 1..2 -> simSlots
-            phoneNumbers.any { it.isNotBlank() } -> phoneNumbers.count { it.isNotBlank() }.coerceIn(1, 2)
-            else -> 1
+        get() {
+            if (simSlots in 1..MAX_SIM_SLOTS) return simSlots
+            val last = phoneNumbers.indexOfLast { it.isNotBlank() }
+            return if (last < 0) 1 else (last + 1).coerceIn(1, MAX_SIM_SLOTS)
         }
+
+    companion object {
+        /**
+         * The most SIM slots a profile can present.
+         *
+         * Android supports devices with three physical slots and some ROMs add
+         * an eSIM on top, so two was an artificial limit. Four covers every
+         * combination without making the editor endless.
+         */
+        const val MAX_SIM_SLOTS = 4
+    }
 }

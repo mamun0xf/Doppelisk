@@ -32,13 +32,13 @@ import java.util.Collections
 import java.util.Locale
 
 /**
- * Hides the fact that the phone is behind a VPN, and rewrites the Wi-Fi and cell
- * identity.
+ * Shapes what the app sees about VPN, Wi-Fi and the cell identity.
  *
  * A VPN is visible from Java in a surprising number of ways: `NetworkCapabilities`
  * reports the VPN transport, `LinkProperties` names the `tun0` interface, and
- * `NetworkInterface.getNetworkInterfaces()` enumerates it. All of those are
- * removed so the app sees an ordinary Wi-Fi connection.
+ * `NetworkInterface.getNetworkInterfaces()` enumerates it. `NetworkPolicy.vpn`
+ * decides whether those answers are the real ones, always say "no VPN", always
+ * say "VPN", or are inverted.
  *
  * The Wi-Fi and cell parts run whenever *either* networking or location is
  * active, because a spoofed location that is inconsistent with the visible Wi-Fi
@@ -70,21 +70,29 @@ object NetworkHooks {
         val mode = policy.mode.trim().lowercase(Locale.ROOT)
         val networkActive = mode != "direct" || policy.killSwitch
         val locationActive = context.artifact.location.mode.trim().lowercase(Locale.ROOT) != "off"
+        val vpn = VpnMode.of(policy.vpn)
+        val vpnActive = vpn != VpnMode.DEFAULT
 
-        if (!networkActive && !locationActive) return
+        if (!networkActive && !locationActive && !vpnActive) return
 
         if (networkActive) {
             hookProxySelector(xposed, context)
             hookSystemProperties(xposed, context)
             hookSettingsProxy(xposed, context)
-            hookCapabilities(xposed, context)
-            hookNetworkInfo(xposed, context)
-            hookLinkProperties(xposed, context)
-            hookInterfaces(xposed, context)
+            hookHttpProxy(xposed, context)
         }
 
-        hookWifi(xposed, context)
-        hookCell(xposed, context)
+        if (vpnActive) {
+            hookCapabilities(xposed, context, vpn)
+            hookNetworkInfo(xposed, context, vpn)
+            hookLinkProperties(xposed, context, vpn)
+            hookInterfaces(xposed, context, vpn)
+        }
+
+        if (networkActive || locationActive) {
+            hookWifi(xposed, context)
+            hookCell(xposed, context)
+        }
     }
 
     // --------------------------------------------------------------- proxy
@@ -173,19 +181,20 @@ object NetworkHooks {
 
     // ---------------------------------------------------------- capabilities
 
-    private fun hookCapabilities(xposed: XposedInterface, context: HookContext) {
+    private fun hookCapabilities(xposed: XposedInterface, context: HookContext, vpn: VpnMode) {
         hookLazy(
             xposed,
             context,
             "NetworkCapabilities.hasTransport",
             { NetworkCapabilities::class.java.getMethod("hasTransport", Int::class.javaPrimitiveType) },
         ) { chain ->
-            if (chain.intArg(0) == TRANSPORT_VPN) {
-                context.boundary.record("network", "hasTransport(VPN)", "true", "false")
-                false
-            } else {
-                chain.proceed()
-            }
+            val raw = runCatching { chain.proceed() }.getOrNull()
+            val real = raw as? Boolean ?: return@hookLazy raw
+            if (chain.intArg(0) != TRANSPORT_VPN) return@hookLazy real
+
+            val fake = vpn.present(real)
+            if (fake != real) record(context, "network", "hasTransport(VPN)", real, fake)
+            fake
         }
 
         hookLazy(
@@ -194,7 +203,15 @@ object NetworkHooks {
             "NetworkCapabilities.hasCapability",
             { NetworkCapabilities::class.java.getMethod("hasCapability", Int::class.javaPrimitiveType) },
         ) { chain ->
-            if (chain.intArg(0) == NET_CAPABILITY_NOT_VPN) true else chain.proceed()
+            val raw = runCatching { chain.proceed() }.getOrNull()
+            val real = raw as? Boolean ?: return@hookLazy raw
+            if (chain.intArg(0) != NET_CAPABILITY_NOT_VPN) return@hookLazy real
+
+            // NOT_VPN is the inverse of VPN: `default` keeps it, `off` forces it
+            // true, `on` forces it false, and `reversed` flips it.
+            val fake = !vpn.present(!real)
+            if (fake != real) record(context, "network", "hasCapability(NOT_VPN)", real, fake)
+            fake
         }
 
         hookLazy(
@@ -203,14 +220,54 @@ object NetworkHooks {
             "NetworkCapabilities.getTransportInfo",
             { NetworkCapabilities::class.java.getMethod("getTransportInfo") },
         ) { chain ->
-            val info = chain.proceed()
-            if (info != null && info.javaClass.name.contains("Vpn", ignoreCase = true)) null else info
+            val real = runCatching { chain.proceed() }.getOrNull()
+            val realVpn = real != null && real.javaClass.name.contains("Vpn", ignoreCase = true)
+            val want = vpn.present(realVpn)
+
+            when {
+                !want && realVpn -> {
+                    record(context, "network", "getTransportInfo", realVpn, null)
+                    null
+                }
+
+                want && !realVpn -> {
+                    // A synthetic VpnTransportInfo may be impossible on this
+                    // ROM; reporting the real object is better than a null that
+                    // contradicts hasTransport(VPN).
+                    val fake = fakeVpnTransportInfo()
+                    if (fake != null) record(context, "network", "getTransportInfo", realVpn, true)
+                    fake ?: real
+                }
+
+                else -> real
+            }
         }
     }
 
+    /** Best-effort `VpnTransportInfo`, built through its hidden constructor. */
+    private fun fakeVpnTransportInfo(): Any? = runCatching {
+        val clazz = Class.forName("android.net.VpnTransportInfo")
+        val constructor = clazz.declaredConstructors.maxByOrNull { it.parameterCount }
+            ?: return@runCatching null
+        constructor.isAccessible = true
+
+        val arguments = constructor.parameterTypes.map { type ->
+            when {
+                type == Int::class.javaPrimitiveType -> VPN_TRANSPORT_TYPE
+                type == Boolean::class.javaPrimitiveType -> false
+                type == Long::class.javaPrimitiveType -> 0L
+                type == String::class.java -> "doppelisk"
+                CharSequence::class.java.isAssignableFrom(type) -> "doppelisk"
+                else -> null
+            }
+        }.toTypedArray()
+
+        constructor.newInstance(*arguments)
+    }.getOrNull()
+
     // ----------------------------------------------------------- network info
 
-    private fun hookNetworkInfo(xposed: XposedInterface, context: HookContext) {
+    private fun hookNetworkInfo(xposed: XposedInterface, context: HookContext, vpn: VpnMode) {
         hookLazy(
             xposed,
             context,
@@ -218,12 +275,18 @@ object NetworkHooks {
             { NetworkInfo::class.java.getMethod("getType") },
         ) { chain ->
             val real = runCatching { chain.proceed() }.getOrNull() as? Int
-            if (real == TYPE_VPN) {
-                record(context, "network", "NetworkInfo.getType", real, TYPE_WIFI)
-                TYPE_WIFI
-            } else {
-                real
+            if (real == null) return@hookLazy null
+
+            val realVpn = real == TYPE_VPN
+            val want = vpn.present(realVpn)
+            val fake = when {
+                want && !realVpn -> TYPE_VPN
+                !want && realVpn -> TYPE_WIFI
+                else -> real
             }
+
+            if (fake != real) record(context, "network", "NetworkInfo.getType", real, fake)
+            fake
         }
 
         hookLazy(
@@ -233,18 +296,24 @@ object NetworkHooks {
             { NetworkInfo::class.java.getMethod("getTypeName") },
         ) { chain ->
             val real = runCatching { chain.proceed() }.getOrNull() as? String
-            if (real != null && real.contains("VPN", ignoreCase = true)) {
-                record(context, "network", "NetworkInfo.getTypeName", real, "WIFI")
-                "WIFI"
-            } else {
-                real
+            if (real == null) return@hookLazy null
+
+            val realVpn = real.contains("VPN", ignoreCase = true)
+            val want = vpn.present(realVpn)
+            val fake = when {
+                want && !realVpn -> "VPN"
+                !want && realVpn -> "WIFI"
+                else -> real
             }
+
+            if (fake != real) record(context, "network", "NetworkInfo.getTypeName", real, fake)
+            fake
         }
     }
 
     // -------------------------------------------------------- link properties
 
-    private fun hookLinkProperties(xposed: XposedInterface, context: HookContext) {
+    private fun hookLinkProperties(xposed: XposedInterface, context: HookContext, vpn: VpnMode) {
         hookLazy(
             xposed,
             context,
@@ -252,12 +321,18 @@ object NetworkHooks {
             { LinkProperties::class.java.getMethod("getInterfaceName") },
         ) { chain ->
             val real = runCatching { chain.proceed() }.getOrNull() as? String
-            if (real != null && looksVirtual(real)) {
-                record(context, "network", "LinkProperties.iface", real, "wlan0")
-                "wlan0"
-            } else {
-                real
+            if (real == null) return@hookLazy null
+
+            val realVpn = looksVirtual(real)
+            val want = vpn.present(realVpn)
+            val fake = when {
+                want && !realVpn -> "tun0"
+                !want && realVpn -> "wlan0"
+                else -> real
             }
+
+            if (fake != real) record(context, "network", "LinkProperties.iface", real, fake)
+            fake
         }
 
         hookLazy(
@@ -267,6 +342,17 @@ object NetworkHooks {
             { LinkProperties::class.java.getMethod("getRoutes") },
         ) { chain ->
             val real = runCatching { chain.proceed() }.getOrNull() as? List<*> ?: return@hookLazy null
+
+            // Routes cannot be synthesised: when the profile asks for a VPN and
+            // there is none, there is nothing to add. When it asks for none, the
+            // virtual routes are removed.
+            val hasVirtual = real.any { route ->
+                val name = runCatching {
+                    route?.javaClass?.getMethod("getInterface")?.invoke(route) as? String
+                }.getOrNull()
+                name != null && looksVirtual(name)
+            }
+            if (vpn.present(hasVirtual)) return@hookLazy real
 
             val filtered = real.filterNot { route ->
                 val name = runCatching {
@@ -280,7 +366,9 @@ object NetworkHooks {
             }
             filtered
         }
+    }
 
+    private fun hookHttpProxy(xposed: XposedInterface, context: HookContext) {
         hookLazy(
             xposed,
             context,
@@ -297,7 +385,7 @@ object NetworkHooks {
 
     // ------------------------------------------------------------ interfaces
 
-    private fun hookInterfaces(xposed: XposedInterface, context: HookContext) {
+    private fun hookInterfaces(xposed: XposedInterface, context: HookContext, vpn: VpnMode) {
         hookLazy(
             xposed,
             context,
@@ -305,7 +393,11 @@ object NetworkHooks {
             { NetworkInterface::class.java.getMethod("getNetworkInterfaces") },
         ) { chain ->
             val real = runCatching { chain.proceed() }.getOrNull() as? java.util.Enumeration<*> ?: return@hookLazy null
-            val filtered = Collections.list(real).filterNot { it is NetworkInterface && looksVirtual(it.name) }
+            val all = Collections.list(real)
+            val hasVirtual = all.any { it is NetworkInterface && looksVirtual(it.name) }
+            if (vpn.present(hasVirtual)) return@hookLazy Collections.enumeration(all)
+
+            val filtered = all.filterNot { it is NetworkInterface && looksVirtual(it.name) }
             Collections.enumeration(filtered)
         }
 
@@ -316,7 +408,7 @@ object NetworkHooks {
             { NetworkInterface::class.java.getMethod("getByName", String::class.java) },
         ) { chain ->
             val name = chain.arg(0) as? String
-            if (name != null && looksVirtual(name)) {
+            if (name != null && looksVirtual(name) && !vpn.present(true)) {
                 context.boundary.record("network", "NetworkInterface.getByName", name, null)
                 null
             } else {
@@ -331,7 +423,7 @@ object NetworkHooks {
             { NetworkInterface::class.java.getMethod("getByIndex", Int::class.javaPrimitiveType) },
         ) { chain ->
             val iface = runCatching { chain.proceed() }.getOrNull() as? NetworkInterface
-            if (iface != null && looksVirtual(iface.name)) {
+            if (iface != null && looksVirtual(iface.name) && !vpn.present(true)) {
                 context.boundary.record("network", "NetworkInterface.getByIndex", iface.name, null)
                 null
             } else {
@@ -347,7 +439,17 @@ object NetworkHooks {
         ) { chain ->
             val iface = chain.thisObject as? NetworkInterface
             val real = runCatching { chain.proceed() }.getOrNull() as? String
-            if (iface != null && looksVirtual(iface.name)) "wlan0" else real
+            if (iface == null) return@hookLazy real
+
+            val realVpn = looksVirtual(iface.name)
+            val want = vpn.present(realVpn)
+            val fake = when {
+                want && !realVpn -> "tun0"
+                !want && realVpn -> "wlan0"
+                else -> real
+            }
+            if (fake != real) record(context, "network", "NetworkInterface.getDisplayName", real, fake)
+            fake
         }
     }
 
@@ -500,6 +602,36 @@ object NetworkHooks {
 
     // --------------------------------------------------------------- helpers
 
+    /**
+     * The four answers to "is there a VPN?".
+     *
+     * [present] is the whole policy: it maps the real state to the one the app
+     * is allowed to see. Every VPN-visible API runs its real answer through it,
+     * so the four modes cannot disagree with each other.
+     */
+    private enum class VpnMode {
+        DEFAULT,
+        ON,
+        OFF,
+        REVERSED;
+
+        fun present(real: Boolean): Boolean = when (this) {
+            DEFAULT -> real
+            ON -> true
+            OFF -> false
+            REVERSED -> !real
+        }
+
+        companion object {
+            fun of(raw: String): VpnMode = when (raw.trim().lowercase(Locale.ROOT)) {
+                "on" -> ON
+                "off" -> OFF
+                "reversed" -> REVERSED
+                else -> DEFAULT
+            }
+        }
+    }
+
     /** True for interface names that only exist because of a VPN. */
     private fun looksVirtual(name: String): Boolean {
         val lower = name.lowercase(Locale.ROOT)
@@ -527,4 +659,5 @@ object NetworkHooks {
     private const val NET_CAPABILITY_NOT_VPN = 15
     private const val TYPE_WIFI = 1
     private const val TYPE_VPN = 17
+    private const val VPN_TRANSPORT_TYPE = 1
 }

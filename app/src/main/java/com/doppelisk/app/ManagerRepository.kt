@@ -3,6 +3,8 @@ package com.doppelisk.app
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.OpenableColumns
 import com.doppelisk.core.config.ConfigPaths
 import com.doppelisk.core.container.ContainerModes
 import com.doppelisk.core.identity.ChassisCatalog
@@ -17,6 +19,9 @@ import com.doppelisk.core.model.DoppeliskArtifact
 import com.doppelisk.core.model.DoppeliskIndex
 import com.doppelisk.core.model.JsonFormats
 import com.doppelisk.hook.engine.DaemonClient
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.util.Locale
 
 /**
@@ -283,6 +288,106 @@ object ManagerRepository {
         return artifact.id
     }
 
+    // ------------------------------------------------------------- transfer
+
+    /**
+     * Exports [id]'s profile to the document the user picked.
+     *
+     * The daemon owns `/data/adb`, so the file is assembled there first — under
+     * this app's own staging directory, the only place the daemon may write —
+     * and then streamed into the SAF document. Neither the archive nor the
+     * container data is ever held in memory: a zip with data can be gigabytes.
+     */
+    fun exportProfile(context: Context, id: String, destination: Uri, includeData: Boolean) {
+        check(DaemonLauncher.ensureRunning(context)) { "root daemon unavailable" }
+
+        val transferDir = File(context.filesDir, TRANSFER_DIR)
+        if (!transferDir.mkdirs() && !transferDir.isDirectory) error("cannot create the staging directory")
+
+        val extension = if (includeData) "zip" else "json"
+        val staging = File(transferDir, "export-${ConfigPaths.sanitize(id)}.$extension")
+
+        try {
+            // The daemon replaces this file in place, so it has to exist and be
+            // empty before the call; a leftover from a crashed export would
+            // otherwise be shipped as the new one.
+            check(staging.delete() || !staging.exists()) { "could not clear the staging file" }
+            check(staging.createNewFile()) { "could not create a staging file" }
+
+            check(DaemonClient.exportProfile(id, staging.path, includeData)) {
+                "the daemon could not export this profile"
+            }
+            check(staging.length() > 0L) { "the daemon produced an empty export" }
+
+            val output = context.contentResolver.openOutputStream(destination)
+                ?: error("cannot open the chosen destination")
+            output.use { out ->
+                FileInputStream(staging).use { input -> input.copyTo(out, TRANSFER_BUFFER) }
+            }
+        } finally {
+            staging.delete()
+        }
+    }
+
+    /**
+     * Imports a profile from the document the user picked and returns the id it
+     * was stored under.
+     *
+     * The chosen stream is copied into this app's staging directory because the
+     * daemon cannot open a SAF URI. The extension is only a hint: the daemon
+     * detects a zip by its magic bytes.
+     */
+    fun importProfile(context: Context, source: Uri): String {
+        check(DaemonLauncher.ensureRunning(context)) { "root daemon unavailable" }
+
+        val transferDir = File(context.filesDir, TRANSFER_DIR)
+        if (!transferDir.mkdirs() && !transferDir.isDirectory) error("cannot create the staging directory")
+
+        val extension = transferExtension(context, source)
+        val staging = File(transferDir, "import-${System.currentTimeMillis()}.$extension")
+
+        try {
+            val input = context.contentResolver.openInputStream(source)
+                ?: error("cannot open the selected file")
+            input.use { stream ->
+                FileOutputStream(staging).use { out -> stream.copyTo(out, TRANSFER_BUFFER) }
+            }
+
+            check(staging.length() > 0L) { "the selected file is empty" }
+
+            return DaemonClient.importProfile(staging.path)
+                ?: error("the daemon could not import the selected file")
+        } finally {
+            staging.delete()
+        }
+    }
+
+    /**
+     * The best extension to give the staging file.
+     *
+     * SAF providers may report no name at all, so a missing or unexpected one
+     * falls back to JSON — the format the daemon detects by content anyway.
+     */
+    private fun transferExtension(context: Context, uri: Uri): String {
+        val name = runCatching {
+            context.contentResolver.query(
+                uri,
+                arrayOf(OpenableColumns.DISPLAY_NAME),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0) else null
+            }
+        }.getOrNull()
+
+        return when (name?.substringAfterLast('.', "")?.lowercase(Locale.ROOT)) {
+            "zip" -> "zip"
+            "json" -> "json"
+            else -> "json"
+        }
+    }
+
     // ---------------------------------------------------------------- misc
 
     /** The shipped chassis catalog. */
@@ -327,4 +432,10 @@ object ManagerRepository {
 
     private fun decodeArtifact(payload: String): DoppeliskArtifact? =
         runCatching { json.decodeFromString(DoppeliskArtifact.serializer(), payload) }.getOrNull()
+
+    /** Staging directory for export/import files, inside this app's own data. */
+    private const val TRANSFER_DIR = "transfer"
+
+    /** Copy buffer for archives, which can be much larger than a JSON document. */
+    private const val TRANSFER_BUFFER = 64 * 1024
 }

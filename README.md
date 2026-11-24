@@ -17,15 +17,20 @@ Android 8.1+ (API 27) · arm64-v8a · root and LSPosed required
   are taken from a real device model.
 - **Derived identifiers.** SSAID, advertising ID, serial, IMEI and MAC addresses
   are stable per profile.
-- **Region and carrier.** Country, operator, MCC/MNC, timezone, location and two
-  SIM slots. Phone numbers follow the operator's numbering plan.
+- **Region and carrier.** Country, operator, MCC/MNC, timezone, location and up
+  to four SIM slots. Phone numbers follow the operator's numbering plan, and the
+  editor reads the real SIM number once the phone permissions are granted.
 - **Network.** Wi-Fi and cellular state, SSID, HTTP and WebView User-Agent,
-  optional SOCKS5 exit or block per profile.
+  optional SOCKS5 exit or block per profile, and a VPN visibility policy
+  (`default`, `on`, `off`, `reversed`).
 - **Root surface.** su paths, mounts, build tags, package visibility and virtual
   `/proc` and `/sys` entries.
 - **Coherence and audit.** Contradictory profiles are rejected before apply; the
   Audit tab shows what a target app actually observed.
 - **Containers.** Separate app data and keystore per profile.
+- **Portable profiles.** Export a profile as JSON, or as a zip that also
+  carries its container data; import either shape. An imported profile that
+  collides with an existing id is given a fresh one, never overwritten.
 - **No network permission.** The manager cannot send anything off the device.
 
 ## Install

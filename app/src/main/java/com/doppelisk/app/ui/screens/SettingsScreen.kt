@@ -1,5 +1,8 @@
 package com.doppelisk.app.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -57,6 +60,7 @@ fun SettingsScreen(
     state: ManagerUiState,
     onOpenScope: (Boolean) -> Unit,
     onOpenAbout: () -> Unit,
+    onImport: (Uri) -> Unit,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
 ) {
@@ -64,6 +68,12 @@ fun SettingsScreen(
     val version = runCatching {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName
     }.getOrNull() ?: "unknown"
+
+    // Providers disagree about a ZIP's MIME type, and some report nothing at
+    // all, so the filter stays wide: the daemon sniffs the real format anyway.
+    val importPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri -> if (uri != null) onImport(uri) }
 
     val inScope = state.rows.count { it.inScope }
     val waiting = state.rows.count { it.hasDoppelisk && !it.inScope }
@@ -111,6 +121,17 @@ fun SettingsScreen(
                 LinkRow("Apps in scope", inScope.toString()) { onOpenScope(false) }
                 ListDivider(startIndent = 16.dp)
                 LinkRow("Waiting for scope", waiting.toString()) { onOpenScope(true) }
+                ListDivider(startIndent = 16.dp)
+                LinkRow("Import profile", "JSON or ZIP") {
+                    importPicker.launch(
+                        arrayOf(
+                            "application/json",
+                            "application/zip",
+                            "application/octet-stream",
+                            "*/*",
+                        ),
+                    )
+                }
             }
         }
 

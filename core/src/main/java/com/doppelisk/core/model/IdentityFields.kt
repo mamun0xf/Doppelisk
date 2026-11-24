@@ -62,7 +62,14 @@ object IdentityFields {
     const val TELEPHONY_COUNTRY = "telephony.countryIso"
     const val TELEPHONY_PHONE_1 = "telephony.phone1"
     const val TELEPHONY_PHONE_2 = "telephony.phone2"
+    const val TELEPHONY_PHONE_3 = "telephony.phone3"
+    const val TELEPHONY_PHONE_4 = "telephony.phone4"
     const val TELEPHONY_SIM_SLOTS = "telephony.simSlots"
+
+    /** The phone-number field keys, indexed by 0-based slot. */
+    val TELEPHONY_PHONES: List<String> = listOf(
+        TELEPHONY_PHONE_1, TELEPHONY_PHONE_2, TELEPHONY_PHONE_3, TELEPHONY_PHONE_4,
+    )
 
     val BUILD: List<String> = listOf(
         BUILD_MANUFACTURER, BUILD_BRAND, BUILD_MODEL, BUILD_DEVICE, BUILD_PRODUCT,
@@ -85,7 +92,8 @@ object IdentityFields {
 
     val TELEPHONY: List<String> = listOf(
         TELEPHONY_MCC, TELEPHONY_MNC, TELEPHONY_CARRIER, TELEPHONY_COUNTRY,
-        TELEPHONY_PHONE_1, TELEPHONY_PHONE_2, TELEPHONY_SIM_SLOTS,
+        TELEPHONY_PHONE_1, TELEPHONY_PHONE_2, TELEPHONY_PHONE_3, TELEPHONY_PHONE_4,
+        TELEPHONY_SIM_SLOTS,
     )
 
     val ALL: List<String> = BUILD + IDS + DISPLAY + HARDWARE + NETWORK_IDS + TELEPHONY

@@ -148,8 +148,31 @@ object DaemonClient {
     fun putArtifact(id: String, payload: String): Boolean =
         request(Request(type = "put_artifact", packageName = id, payload = payload))?.ok == true
 
+    /**
+     * Asks the daemon to write [id]'s profile to a staging file it owns.
+     *
+     * The daemon is the only side that can read `/data/adb`, and a zip with
+     * container data can be gigabytes, so the timeout is minutes rather than
+     * the usual couple of seconds.
+     */
+    fun exportProfile(id: String, destinationPath: String, includeData: Boolean): Boolean = request(
+        Request(
+            type = "export_profile",
+            packageName = id,
+            payload = if (includeData) "zip:$destinationPath" else destinationPath,
+        ),
+        TRANSFER_TIMEOUT_MS,
+    )?.ok == true
+
+    /** Stores a profile from [stagingPath]; returns the id the daemon gave it. */
+    fun importProfile(stagingPath: String): String? = request(
+        Request(type = "import_profile", payload = stagingPath),
+        TRANSFER_TIMEOUT_MS,
+    )?.takeIf { it.ok }?.payload
+
     private const val DEFAULT_TIMEOUT_MS = 2000
     private const val PREPARE_TIMEOUT_MS = 15_000
     private const val NETWORK_TIMEOUT_MS = 10_000
     private const val RELAUNCH_TIMEOUT_MS = 15_000
+    private const val TRANSFER_TIMEOUT_MS = 120_000
 }

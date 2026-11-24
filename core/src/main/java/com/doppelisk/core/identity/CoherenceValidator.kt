@@ -2,6 +2,7 @@ package com.doppelisk.core.identity
 
 import com.doppelisk.core.model.Chassis
 import com.doppelisk.core.model.DoppeliskArtifact
+import com.doppelisk.core.model.TelephonyIdentity
 import java.util.Locale
 
 /** Result of [CoherenceValidator.validate]. */
@@ -189,8 +190,9 @@ object CoherenceValidator {
         // Phone numbers are stored in E.164 form so the hook can return them
         // without guessing a country code. A blank slot is valid: it means the
         // SIM has no number, which is a normal state on many networks.
-        if (telephony.phoneNumbers.size > 2) {
-            errors += "a profile can carry at most two phone numbers"
+        val maxSlots = TelephonyIdentity.MAX_SIM_SLOTS
+        if (telephony.phoneNumbers.size > maxSlots) {
+            errors += "a profile can carry at most $maxSlots phone numbers"
         }
         for ((index, number) in telephony.phoneNumbers.withIndex()) {
             if (number.isBlank()) continue
@@ -202,16 +204,22 @@ object CoherenceValidator {
         if (presentNumbers.size != presentNumbers.toSet().size) {
             errors += "phone numbers must be unique"
         }
-        if (telephony.phoneNumbers.getOrNull(1)?.isNotBlank() == true &&
-            telephony.phoneNumbers.getOrNull(0).isNullOrBlank()
-        ) {
-            errors += "SIM 2 has a number but SIM 1 does not"
+
+        // Slots are contiguous: SIM 3 cannot be populated while SIM 2 is empty,
+        // because the framework's slot indices are dense and an app that walks
+        // them would skip the fake entry.
+        val lastNumber = telephony.phoneNumbers.indexOfLast { it.isNotBlank() }
+        for (slot in 0..lastNumber) {
+            if (telephony.phoneNumbers.getOrNull(slot).isNullOrBlank()) {
+                errors += "SIM ${slot + 1} has no number but a later SIM does"
+                break
+            }
         }
-        if (telephony.simSlots == 1 && telephony.phoneNumbers.getOrNull(1)?.isNotBlank() == true) {
-            errors += "simSlots is 1 but SIM 2 has a number"
+        if (telephony.simSlots in 1..maxSlots && lastNumber >= telephony.simSlots) {
+            errors += "simSlots is ${telephony.simSlots} but SIM ${lastNumber + 1} has a number"
         }
-        if (telephony.simSlots !in 0..2) {
-            errors += "telephony.simSlots must be 0 (auto), 1 or 2: '${telephony.simSlots}'"
+        if (telephony.simSlots !in 0..maxSlots) {
+            errors += "telephony.simSlots must be 0 (auto) or 1..$maxSlots: '${telephony.simSlots}'"
         }
 
         // O. Network policy.

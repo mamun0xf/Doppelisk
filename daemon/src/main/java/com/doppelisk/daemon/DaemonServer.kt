@@ -2,6 +2,7 @@ package com.doppelisk.daemon
 
 import android.net.LocalServerSocket
 import android.net.LocalSocket
+import android.system.Os
 import android.util.Log
 import com.doppelisk.core.config.ConfigPaths
 import com.doppelisk.core.config.ConfigStore
@@ -24,6 +25,7 @@ import java.io.OutputStreamWriter
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
 import java.nio.file.StandardOpenOption
+import java.security.SecureRandom
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
@@ -47,6 +49,7 @@ class DaemonServer(private val store: ConfigStore = ConfigStore()) {
     private val pool = Executors.newCachedThreadPool()
     private val containers = ContainerManager()
     private val networks = NetworkManager()
+    private val transfers = ProfileTransfer()
     private val uidPackages = ConcurrentHashMap<Int, String>()
 
     @Volatile
@@ -251,6 +254,8 @@ class DaemonServer(private val store: ConfigStore = ConfigStore()) {
                 }
 
                 "put_artifact" -> putArtifact(request, callerUid)
+                "export_profile" -> exportProfile(request, callerUid)
+                "import_profile" -> importProfile(request, callerUid)
                 "activate_doppelisk" -> activateDoppelisk(request, callerUid)
                 "relaunch_package" -> relaunchPackage(request, callerUid)
                 "delete_doppelisk" -> deleteDoppelisk(request, callerUid)
@@ -385,6 +390,150 @@ class DaemonServer(private val store: ConfigStore = ConfigStore()) {
         val entries = index.doppelisks.toMutableMap()
         entries[id] = IndexEntry(id, artifact.label, pkg, store.artifactPath(id))
         return index.copy(assignments = assignments, doppelisks = entries)
+    }
+
+    /**
+     * Writes [request.packageName]'s profile to a staging path in the manager.
+     *
+     * The manager cannot read `/data/adb`, so the file is produced here and the
+     * manager only copies the finished bytes into the document the user chose.
+     * A `.zip` destination (or a `zip:` prefix) additionally carries the
+     * profile's container data.
+     */
+    @Synchronized
+    private fun exportProfile(request: Request, callerUid: Int): Response {
+        if (!isMutator(callerUid)) return deny("export_profile")
+        val id = request.packageName ?: return fail("export_profile", "missing id")
+        val raw = request.payload ?: return fail("export_profile", "missing destination")
+
+        val zip = raw.startsWith(ZIP_PREFIX) || raw.endsWith(".zip", ignoreCase = true)
+        val destination = managerFile(raw.removePrefix(ZIP_PREFIX))
+            ?: return fail("export_profile", "destination outside the manager data directory")
+
+        val artifactJson = store.readArtifact(id) ?: return fail("export_profile", "no doppelisk $id")
+        val artifact = runCatching {
+            json.decodeFromString(DoppeliskArtifact.serializer(), artifactJson)
+        }.getOrNull() ?: return fail("export_profile", "unreadable doppelisk $id")
+
+        val profileJson = JsonFormats.profile.encodeToString(DoppeliskArtifact.serializer(), artifact)
+        val written = runCatching {
+            writeOwned(destination) { target ->
+                if (zip) {
+                    transfers.writeZip(target, profileJson, artifact)
+                } else {
+                    transfers.writeJson(target, profileJson)
+                }
+            }
+        }
+
+        return written.fold(
+            onSuccess = { Response(true, "export_profile", destination.path) },
+            onFailure = { fail("export_profile", it.message ?: "could not write the export") },
+        )
+    }
+
+    /**
+     * Stores a profile from a staging file, giving it a fresh id when its own is
+     * already taken so an import never replaces an existing profile.
+     *
+     * A zip also restores the container tree. That happens before the artifact
+     * and index are written, so a failed extraction leaves no half-imported
+     * profile behind.
+     */
+    @Synchronized
+    private fun importProfile(request: Request, callerUid: Int): Response {
+        if (!isMutator(callerUid)) return deny("import_profile")
+        val raw = request.payload ?: return fail("import_profile", "missing source")
+        val source = managerFile(raw)
+            ?: return fail("import_profile", "source outside the manager data directory")
+        if (!source.isFile) return fail("import_profile", "no staging file")
+
+        val imported = runCatching { transfers.read(source) }.getOrElse {
+            return fail("import_profile", it.message ?: "not a Doppelisk profile")
+        }
+        val artifact = imported.artifact
+        val pkg = artifact.target.packageName
+        if (pkg.isBlank()) return fail("import_profile", "profile has no target package")
+
+        // An id is a path segment, so anything that is not already a safe one is
+        // replaced rather than sanitized: two odd ids must not collide on disk.
+        val requested = artifact.id.takeIf { it.isNotBlank() && ConfigPaths.sanitize(it) == it }
+        val newId = if (requested == null || store.readArtifact(requested) != null) {
+            ConfigPaths.newProfileId(SecureRandom().generateSeed(32))
+        } else {
+            requested
+        }
+
+        if (imported.zip) {
+            val containerDir = File(ConfigPaths.containerDir(newId))
+            val restored = runCatching { transfers.extractContainer(source, containerDir) }
+            if (restored.isFailure) {
+                runCatching { containerDir.deleteRecursively() }
+                return fail(
+                    "import_profile",
+                    restored.exceptionOrNull()?.message ?: "could not restore the container data",
+                )
+            }
+        }
+
+        val updated = artifact.copy(id = newId)
+        store.writeArtifact(newId, JsonFormats.profile.encodeToString(DoppeliskArtifact.serializer(), updated))
+        store.writeIndex(withAssignment(store.readIndex(), updated, newId))
+        log("import_profile: $pkg imported as $newId${if (imported.zip) " with container data" else ""}")
+        return Response(true, "import_profile", newId)
+    }
+
+    /**
+     * Resolves [path] only when it lies inside the manager's data directory.
+     *
+     * Both sides are canonicalized so a symlink inside the app's tree cannot
+     * point the daemon at `/data/adb` or anywhere else it owns as root.
+     */
+    private fun managerFile(path: String): File? {
+        val dataDir = resolveDataDir(MANAGER_PACKAGE) ?: return null
+        val base = runCatching { dataDir.canonicalFile }.getOrNull() ?: return null
+        val file = runCatching { File(path).canonicalFile }.getOrNull() ?: return null
+        if (file.path == base.path) return null
+        return file.takeIf { it.path.startsWith(base.path + File.separator) }
+    }
+
+    /**
+     * Writes [target] through a sibling temp file, then renames it into place.
+     *
+     * The staging file belongs to the manager but the daemon is root, so the
+     * temp is handed back to the file's owner (and its mode) before the rename;
+     * otherwise the manager would be left with a root-owned file it may not
+     * read.
+     */
+    private fun writeOwned(target: File, write: (File) -> Unit): Boolean {
+        val owner = runCatching { Os.stat(target.path) }.getOrNull()
+        val label = runCatching { Os.getxattr(target.path, SELINUX_XATTR) }.getOrNull()
+        val parent = target.parentFile ?: error("no parent directory for ${target.path}")
+        parent.mkdirs()
+
+        val temp = File(parent, target.name + ".part")
+        temp.delete()
+        write(temp)
+
+        if (owner != null) {
+            val adopted = runCatching {
+                Os.chown(temp.path, owner.st_uid, owner.st_gid)
+                Os.chmod(temp.path, owner.st_mode and 0x1ff)
+            }.isSuccess
+            if (!adopted) runCatching { Os.chmod(temp.path, READABLE_MODE) }
+        } else {
+            runCatching { Os.chmod(temp.path, READABLE_MODE) }
+        }
+
+        // Ownership alone is not enough: an app-domain process can only read a
+        // file whose SELinux label matches its own data. The manager created the
+        // staging file, so its label is the one the result must carry.
+        if (label != null) runCatching { Os.setxattr(temp.path, SELINUX_XATTR, label, 0) }
+
+        if (temp.renameTo(target)) return true
+        temp.copyTo(target, overwrite = true)
+        temp.delete()
+        return true
     }
 
     @Synchronized
@@ -755,5 +904,14 @@ class DaemonServer(private val store: ConfigStore = ConfigStore()) {
 
         /** How often the daemon checks whether its manager was reinstalled. */
         const val INSTALL_WATCH_MS = 5_000L
+
+        /** Marks an export destination that should carry the container data. */
+        const val ZIP_PREFIX = "zip:"
+
+        /** `0644`: readable by the manager even when it cannot be chowned. */
+        const val READABLE_MODE = 0x1A4
+
+        /** Extended attribute carrying the SELinux label. */
+        const val SELINUX_XATTR = "security.selinux"
     }
 }

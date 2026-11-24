@@ -1,6 +1,10 @@
 package com.doppelisk.app.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,9 +36,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -75,6 +81,28 @@ import com.doppelisk.core.model.JsonFormats
 @Composable
 fun DoppeliskRoot(viewModel: ManagerViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // Region & Carrier auto-fill reads MCC/MNC and the phone numbers through
+    // SubscriptionManager and TelephonyManager. Both are gated behind runtime
+    // permissions that the manifest alone does not grant, so without this the
+    // snapshot silently falls back to generated numbers. Ask once, then reload
+    // so the editor picks up the real SIM values immediately.
+    val context = LocalContext.current
+    var phonePermissionAsked by rememberSaveable { mutableStateOf(false) }
+    val phonePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { granted ->
+        if (granted.values.any { it }) viewModel.refresh(showSpinner = false)
+    }
+    LaunchedEffect(Unit) {
+        if (phonePermissionAsked) return@LaunchedEffect
+        val missing = PHONE_PERMISSIONS.filter {
+            ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missing.isEmpty()) return@LaunchedEffect
+        phonePermissionAsked = true
+        phonePermissionLauncher.launch(missing.toTypedArray())
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, viewModel) {
@@ -374,6 +402,9 @@ fun DoppeliskRoot(viewModel: ManagerViewModel = viewModel()) {
                         onClearData = { id ->
                             viewModel.clearProfileData(detailRow.option, id) { }
                         },
+                        onExport = { id, uri, includeData ->
+                            viewModel.exportProfile(id, uri, includeData)
+                        },
                         onRequestScope = { viewModel.requestScope(detailRow.option) },
                         onRelaunch = {
                             viewModel.selectTarget(detailRow.option.packageName)
@@ -418,6 +449,7 @@ fun DoppeliskRoot(viewModel: ManagerViewModel = viewModel()) {
                     state = state,
                     onOpenScope = { waiting -> scopeWaiting = waiting },
                     onOpenAbout = { aboutOpen = true },
+                    onImport = { uri -> viewModel.importProfile(uri) },
                     listState = listState("settings"),
                 )
             }
@@ -521,3 +553,15 @@ private fun BottomTabs(selected: Tab, onSelect: (Tab) -> Unit) {
         }
     }
 }
+
+/**
+ * Runtime permissions the device snapshot needs before it can read the SIM.
+ *
+ * `READ_PHONE_STATE` gates the subscription list; `READ_PHONE_NUMBERS` gates
+ * `line1Number` / `SubscriptionManager.getPhoneNumber`. Neither is granted by
+ * declaring it in the manifest.
+ */
+private val PHONE_PERMISSIONS = listOf(
+    Manifest.permission.READ_PHONE_STATE,
+    Manifest.permission.READ_PHONE_NUMBERS,
+)

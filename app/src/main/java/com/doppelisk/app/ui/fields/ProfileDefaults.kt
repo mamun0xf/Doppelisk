@@ -219,22 +219,77 @@ object ProfileDefaults {
 
     private fun telephony(context: Context): TelephonyIdentity {
         val manager = context.getSystemService(TelephonyManager::class.java)
-        val operator = manager?.networkOperator.orEmpty()
-        val mcc = operator.take(3)
-        val mnc = operator.drop(3)
+        val subscriptions = activeSubscriptions(context)
+        val primary = subscriptions.firstOrNull { it.simSlotIndex == 0 } ?: subscriptions.firstOrNull()
+
+        // `networkOperator*` describes the *serving* network and is empty without
+        // coverage or while roaming registration is pending. The SIM's own
+        // operator is still readable, and it is the identity the profile wants.
+        val simOperator = runCatching { manager?.simOperator }.getOrNull().orEmpty().trim()
+        val networkOperator = runCatching { manager?.networkOperator }.getOrNull().orEmpty().trim()
+        val operator = simOperator.ifBlank { networkOperator }
+
+        val mcc = subscriptionMcc(primary)
+            .ifBlank { operator.take(3) }
+        val mnc = subscriptionMnc(primary)
+            .ifBlank { operator.drop(3) }
+
+        val carrier = primary?.carrierName?.toString().orEmpty().trim()
+            .ifBlank { runCatching { manager?.simOperatorName }.getOrNull().orEmpty().trim() }
+            .ifBlank { runCatching { manager?.networkOperatorName }.getOrNull().orEmpty().trim() }
+
+        val countryIso = primary?.countryIso.orEmpty().trim()
+            .ifBlank { runCatching { manager?.simCountryIso }.getOrNull().orEmpty().trim() }
+            .ifBlank { runCatching { manager?.networkCountryIso }.getOrNull().orEmpty().trim() }
+            .uppercase(Locale.ROOT)
 
         val numbers = simNumbers(context, manager)
         val modems = runCatching { manager?.activeModemCount }.getOrNull() ?: 1
-        val slots = maxOf(modems, numbers.count { it.isNotBlank() })
+        val inserted = maxOf(subscriptions.size, numbers.count { it.isNotBlank() })
+        val slots = maxOf(inserted, 1)
+            .coerceAtMost(modems.coerceIn(1, TelephonyIdentity.MAX_SIM_SLOTS))
 
         return TelephonyIdentity(
             mcc = mcc,
             mnc = mnc,
-            carrier = manager?.networkOperatorName.orEmpty(),
-            countryIso = manager?.networkCountryIso.orEmpty().uppercase(Locale.ROOT),
+            carrier = carrier,
+            countryIso = countryIso,
             phoneNumbers = numbers,
-            simSlots = slots.coerceIn(1, 2),
+            simSlots = slots.coerceIn(1, TelephonyIdentity.MAX_SIM_SLOTS),
         )
+    }
+
+    /**
+     * The subscriptions Android reports for inserted SIMs.
+     *
+     * Requires `READ_PHONE_STATE`; without it the platform throws and the list
+     * is empty, which is why the manager asks for the permission at startup.
+     */
+    private fun activeSubscriptions(context: Context): List<android.telephony.SubscriptionInfo> = runCatching {
+        context.getSystemService(SubscriptionManager::class.java)
+            ?.activeSubscriptionInfoList
+            .orEmpty()
+    }.getOrDefault(emptyList())
+
+    /** `SubscriptionInfo.mcc`, which only exists from API 29. */
+    private fun subscriptionMcc(info: android.telephony.SubscriptionInfo?): String {
+        if (info == null || Build.VERSION.SDK_INT < 29) return ""
+        return runCatching { info.mcc.toString() }.getOrNull()
+            .orEmpty()
+            .trim()
+            .takeIf { it.isNotEmpty() && it != "0" }
+            .orEmpty()
+    }
+
+    /** `SubscriptionInfo.mnc`, padded to the two-digit form MCC/MNC strings use. */
+    private fun subscriptionMnc(info: android.telephony.SubscriptionInfo?): String {
+        if (info == null || Build.VERSION.SDK_INT < 29) return ""
+        return runCatching { info.mnc.toString() }.getOrNull()
+            .orEmpty()
+            .trim()
+            .takeIf { it.isNotEmpty() && it != "0" }
+            ?.padStart(2, '0')
+            .orEmpty()
     }
 
     /**
@@ -242,44 +297,71 @@ object ProfileDefaults {
      *
      * `line1Number` is only the *default* SIM's number, so a dual-SIM phone
      * would hide the second one. Reading the subscription list gives one entry
-     * per SIM with its own slot index. Both paths need READ_PHONE_NUMBERS; when
-     * the permission is missing the list is simply empty and the editor falls
-     * back to generated numbers.
+     * per SIM with its own slot index. Every path needs `READ_PHONE_NUMBERS`;
+     * when the permission is missing the list is simply empty and the editor
+     * falls back to generated numbers.
      */
     fun simNumbers(context: Context, manager: TelephonyManager? = null): List<String> {
         val bySlot = sortedMapOf<Int, String>()
+        val subscriptions = context.getSystemService(SubscriptionManager::class.java)
 
-        runCatching {
-            val subscriptions = context.getSystemService(SubscriptionManager::class.java)
-            subscriptions?.activeSubscriptionInfoList.orEmpty().forEach { info ->
-                // Three sources, most reliable first. `SubscriptionManager
-                // .getPhoneNumber` is the modern one: on Android 13+ the number
-                // usually arrives over IMS and never reaches `SubscriptionInfo
-                // .number`, which is why reading the field alone reports nothing
-                // on a perfectly normal SIM.
-                val modern = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    runCatching { subscriptions?.getPhoneNumber(info.subscriptionId) }.getOrNull()
-                } else {
-                    null
-                }
-                val direct = runCatching { info.number }.getOrNull()
-                val fallback = runCatching {
-                    manager?.createForSubscriptionId(info.subscriptionId)?.line1Number
-                }.getOrNull()
+        activeSubscriptions(context).forEachIndexed { index, info ->
+            // Four sources, most reliable first. `SubscriptionManager
+            // .getPhoneNumber` is the modern one: on Android 13+ the number
+            // usually arrives over IMS and never reaches `SubscriptionInfo
+            // .number`, which is why reading the field alone reports nothing on
+            // a perfectly normal SIM. The per-subscription manager is the only
+            // path that works for a non-default SIM on older releases.
+            val modern = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                runCatching { subscriptions?.getPhoneNumber(info.subscriptionId) }.getOrNull()
+            } else {
+                null
+            }
+            val direct = runCatching { info.number }.getOrNull()
+            val perSubscription = runCatching {
+                manager?.createForSubscriptionId(info.subscriptionId)?.line1Number
+            }.getOrNull()
 
-                val number = modern.orEmpty().ifBlank { direct.orEmpty() }
-                    .ifBlank { fallback.orEmpty() }
-                    .trim()
-                if (number.isNotBlank()) bySlot[info.simSlotIndex] = number
+            val number = modern.orEmpty()
+                .ifBlank { msisdn(manager, info.subscriptionId) }
+                .ifBlank { direct.orEmpty() }
+                .ifBlank { perSubscription.orEmpty() }
+                .trim()
+
+            if (number.isNotBlank()) {
+                val slot = info.simSlotIndex
+                    .takeIf { it in 0 until TelephonyIdentity.MAX_SIM_SLOTS }
+                    ?: index.takeIf { it in 0 until TelephonyIdentity.MAX_SIM_SLOTS }
+                    ?: 0
+                bySlot[slot] = number
             }
         }
 
         if (bySlot.isEmpty()) {
             val single = runCatching { manager?.line1Number }.getOrNull().orEmpty().trim()
+                .ifBlank { msisdn(manager) }
             if (single.isNotBlank()) bySlot[0] = single
         }
 
         val last = bySlot.keys.maxOrNull() ?: return emptyList()
         return (0..last).map { bySlot[it].orEmpty() }
     }
+
+    /**
+     * `TelephonyManager.getMsisdn`, the second name the same value has.
+     *
+     * It is hidden from the SDK but present on every modem, and it is the path
+     * apps like bKash reach for when `line1Number` is empty. Going through
+     * reflection also means the manager keeps working when a ROM removes one of
+     * the two getters.
+     */
+    private fun msisdn(manager: TelephonyManager?, subId: Int? = null): String = runCatching {
+        val method = if (subId == null) {
+            manager?.javaClass?.getMethod("getMsisdn")
+        } else {
+            manager?.javaClass?.getMethod("getMsisdn", Int::class.javaPrimitiveType!!)
+        }
+        if (subId == null) method?.invoke(manager) as? String
+        else method?.invoke(manager, subId) as? String
+    }.getOrNull().orEmpty().trim()
 }

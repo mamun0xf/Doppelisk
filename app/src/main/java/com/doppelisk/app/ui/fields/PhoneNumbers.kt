@@ -5,6 +5,7 @@ import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber
 import com.doppelisk.core.identity.CarrierSeries
 import com.doppelisk.core.model.DoppeliskArtifact
 import com.doppelisk.core.model.IdentityFields
+import com.doppelisk.core.model.TelephonyIdentity
 import com.doppelisk.core.model.withOverride
 import java.util.Locale
 
@@ -130,9 +131,8 @@ object PhoneNumbers {
         val telephony = artifact.identity.telephony
         val carrier = telephony.carrier
         val wanted = when {
-            telephony.simSlots in 1..2 -> telephony.simSlots
-            telephony.phoneNumbers.count { it.isNotBlank() } >= 2 -> 2
-            else -> 1
+            telephony.simSlots in 1..TelephonyIdentity.MAX_SIM_SLOTS -> telephony.simSlots
+            else -> telephony.effectiveSimSlots
         }
 
         val numbers = (0 until wanted).map { slot ->
@@ -151,9 +151,7 @@ object PhoneNumbers {
         )
         for ((slot, number) in numbers.withIndex()) {
             if (number.isBlank()) continue
-            updated = updated.withOverride(
-                if (slot == 0) IdentityFields.TELEPHONY_PHONE_1 else IdentityFields.TELEPHONY_PHONE_2,
-            )
+            updated = updated.withOverride(IdentityFields.TELEPHONY_PHONES[slot])
         }
         return updated
     }
@@ -168,7 +166,7 @@ object PhoneNumbers {
      */
     fun seedFromDevice(artifact: DoppeliskArtifact, numbers: List<String>): DoppeliskArtifact {
         val telephony = artifact.identity.telephony
-        val clean = numbers.take(2).map { raw ->
+        val clean = numbers.take(TelephonyIdentity.MAX_SIM_SLOTS).map { raw ->
             raw.trim().let { normalize(it, telephony.countryIso) ?: it }
         }
         if (clean.none { it.isNotBlank() }) return artifact
@@ -184,9 +182,7 @@ object PhoneNumbers {
         )
         for ((slot, number) in merged.withIndex()) {
             if (number.isBlank()) continue
-            updated = updated.withOverride(
-                if (slot == 0) IdentityFields.TELEPHONY_PHONE_1 else IdentityFields.TELEPHONY_PHONE_2,
-            )
+            updated = updated.withOverride(IdentityFields.TELEPHONY_PHONES[slot])
         }
         return updated
     }

@@ -5,6 +5,7 @@ import com.doppelisk.core.identity.LocationModes
 import com.doppelisk.core.model.DoppeliskArtifact
 import com.doppelisk.core.model.Identity
 import com.doppelisk.core.model.IdentityFields
+import com.doppelisk.core.model.TelephonyIdentity
 import com.doppelisk.core.model.applies
 import com.doppelisk.core.model.withOverride
 import com.doppelisk.core.model.withoutOverride
@@ -27,6 +28,7 @@ object ProfileFields {
     private val CONTAINER_OPTIONS = ContainerModes.ALL
     private val NETWORK_OPTIONS = listOf("direct", "socks5", "block")
     private val IPV6_OPTIONS = listOf("block", "direct", "proxy")
+    private val VPN_OPTIONS = listOf("default", "off", "on", "reversed")
     private val LOCATION_OPTIONS = LocationModes.ALL
     private val BUILD_TYPES = listOf("user", "userdebug", "eng")
     private val BUILD_TAGS = listOf("release-keys", "test-keys", "dev-keys")
@@ -128,15 +130,14 @@ object ProfileFields {
         val value = raw.trim()
 
         return when (key) {
-            IdentityFields.TELEPHONY_PHONE_1,
-            IdentityFields.TELEPHONY_PHONE_2,
-            -> PhoneNumbers.validate(value, countryIso)
+            in IdentityFields.TELEPHONY_PHONES -> PhoneNumbers.validate(value, countryIso)
 
             IdentityFields.TELEPHONY_SIM_SLOTS -> {
-                if (value.lowercase(Locale.ROOT) in setOf("auto", "1", "2")) {
+                val max = TelephonyIdentity.MAX_SIM_SLOTS
+                if (value.lowercase(Locale.ROOT) in (setOf("auto") + (1..max).map(Int::toString))) {
                     null
                 } else {
-                    "Choose auto, 1, or 2."
+                    "Choose auto, or 1..$max."
                 }
             }
 
@@ -189,6 +190,10 @@ object ProfileFields {
         "dev-keys" -> "Dev keys"
         "userdebug" -> "Userdebug"
         "socks5" -> "SOCKS5"
+        "default" -> "Default (real)"
+        "on" -> "Always on"
+        "off" -> "Always off"
+        "reversed" -> "Reversed"
         "stealth" -> "Stealth"
         "balanced" -> "Balanced"
         "aggressive" -> "Aggressive"
@@ -196,6 +201,36 @@ object ProfileFields {
     }
 
     // ------------------------------------------------------------- internals
+
+    /**
+     * Phone-number rows for the slots this profile actually presents.
+     *
+     * At least two rows stay visible so a single-SIM profile can grow into a
+     * second one without hunting for a control, and the list grows to the
+     * highest populated slot or the declared slot count, whichever is larger.
+     * Changing "SIM slots" re-renders the category, which is what makes the
+     * rows appear and disappear.
+     */
+    private fun phoneRows(telephony: TelephonyIdentity): Array<FieldSpec> {
+        val highest = telephony.phoneNumbers.indexOfLast { it.isNotBlank() } + 1
+        val wanted = maxOf(2, highest, telephony.simSlots)
+            .coerceIn(1, TelephonyIdentity.MAX_SIM_SLOTS)
+
+        return Array(wanted) { slot ->
+            FieldSpec(
+                IdentityFields.TELEPHONY_PHONES[slot],
+                "Phone number ${slot + 1} (SIM ${slot + 1})",
+                telephony.phoneNumber(slot),
+                mono = true,
+                placeholder = if (slot == 0) "generated from the carrier" else "optional SIM ${slot + 1}",
+                hint = if (slot == 0) {
+                    "E.164 form, e.g. +8801XXXXXXXXX. Empty leaves SIM 1 without a number."
+                } else {
+                    "E.164 form. Set the earlier slots first; leave empty for fewer SIMs."
+                },
+            )
+        }
+    }
 
     private fun baseCategoriesFor(
         artifact: DoppeliskArtifact,
@@ -347,29 +382,14 @@ object ProfileFields {
                     FieldSpec(IdentityFields.TELEPHONY_MCC, "MCC", telephony.mcc, mono = true),
                     FieldSpec(IdentityFields.TELEPHONY_MNC, "MNC", telephony.mnc, mono = true),
                     FieldSpec(IdentityFields.TELEPHONY_COUNTRY, "Country ISO", telephony.countryIso, mono = true),
-                    FieldSpec(
-                        IdentityFields.TELEPHONY_PHONE_1,
-                        "Phone number 1 (SIM 1)",
-                        telephony.phoneNumber(0),
-                        mono = true,
-                        placeholder = "generated from the carrier",
-                        hint = "E.164 form, e.g. +8801XXXXXXXXX. Empty leaves SIM 1 without a number.",
-                    ),
-                    FieldSpec(
-                        IdentityFields.TELEPHONY_PHONE_2,
-                        "Phone number 2 (SIM 2)",
-                        telephony.phoneNumber(1),
-                        mono = true,
-                        placeholder = "optional second SIM",
-                        hint = "E.164 form. Set SIM 1 first; leave empty for a single-SIM profile.",
-                    ),
+                    *phoneRows(telephony),
                     FieldSpec(
                         IdentityFields.TELEPHONY_SIM_SLOTS,
                         "SIM slots",
                         if (telephony.simSlots == 0) "auto" else telephony.simSlots.toString(),
                         FieldKind.SELECT,
-                        listOf("auto", "1", "2"),
-                        hint = "Auto presents one slot, or two when a second number is set.",
+                        listOf("auto") + (1..TelephonyIdentity.MAX_SIM_SLOTS).map(Int::toString),
+                        hint = "Auto presents one slot per number; choose a count to present empty slots too.",
                     ),
                     FieldSpec(
                         "location.timezone",
@@ -434,6 +454,14 @@ object ProfileFields {
                     FieldSpec("network.killSwitch", "Kill switch", network.killSwitch.toString(), FieldKind.BOOLEAN),
                     FieldSpec("network.dns", "DNS", network.dns.orEmpty(), mono = true, placeholder = "empty or block"),
                     FieldSpec("network.ipv6", "IPv6", network.ipv6, FieldKind.SELECT, IPV6_OPTIONS),
+                    FieldSpec(
+                        "network.vpn",
+                        "VPN visibility",
+                        network.vpn,
+                        FieldKind.SELECT,
+                        VPN_OPTIONS,
+                        hint = "Default reports the real state; Off hides a real VPN; On always claims one; Reversed inverts it.",
+                    ),
                 ),
             ),
             FieldCategory(
@@ -568,14 +596,18 @@ object ProfileFields {
             IdentityFields.TELEPHONY_MCC -> withIdentity(identity.copy(telephony = telephony.copy(mcc = value)))
             IdentityFields.TELEPHONY_MNC -> withIdentity(identity.copy(telephony = telephony.copy(mnc = value)))
             IdentityFields.TELEPHONY_COUNTRY -> withIdentity(identity.copy(telephony = telephony.copy(countryIso = value)))
-            IdentityFields.TELEPHONY_PHONE_1 -> withPhone(0, value)
-            IdentityFields.TELEPHONY_PHONE_2 -> withPhone(1, value)
+            in IdentityFields.TELEPHONY_PHONES -> withPhone(
+                IdentityFields.TELEPHONY_PHONES.indexOf(key),
+                value,
+            )
             IdentityFields.TELEPHONY_SIM_SLOTS -> withIdentity(
                 identity.copy(
                     telephony = telephony.copy(
                         simSlots = when (value.lowercase(Locale.ROOT)) {
                             "auto", "" -> 0
-                            else -> value.toIntOrNull()?.coerceIn(0, 2) ?: 0
+                            else -> value.toIntOrNull()
+                                ?.coerceIn(0, TelephonyIdentity.MAX_SIM_SLOTS)
+                                ?: 0
                         },
                     ),
                 ),
@@ -603,6 +635,7 @@ object ProfileFields {
             )
             "network.dns" -> artifact.copy(network = artifact.network.copy(dns = value.ifBlank { null }))
             "network.ipv6" -> artifact.copy(network = artifact.network.copy(ipv6 = value))
+            "network.vpn" -> artifact.copy(network = artifact.network.copy(vpn = value))
 
             // -------------------------------------------------- policy
             "policy.preset" -> artifact.copy(policy = artifact.policy.copy(preset = value))
